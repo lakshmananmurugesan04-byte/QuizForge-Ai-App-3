@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuizForge AI — Quiz Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<!-- PDF.js CDN for client-side PDF text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div class="screen" id="screen-home">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="openMenu()" title="Open Menu">&#9776;</button>
+      <div class="brand">
+        <h1>Quiz<span class="ai">Forge</span> &#10024;</h1>
+        <p>AI Quiz Companion</p>
+      </div>
+      <button class="icon-btn" onclick="toggleNotifications(event)" title="Notifications">
+        &#128276;
+        <span class="notif-badge hidden" id="notif-badge">0</span>
+      </button>
+    </div>
+
+    <div class="hero">
+      <h2>Study smarter with quizzes built from your notes.</h2>
+      <p>Paste your notes, generate AI questions, test yourself, and track your progress.</p>
+    </div>
+
+    <div class="tile-grid">
+      <div class="tile wide" onclick="goTo('notes')">
+        <div class="emoji">&#128196;</div>
+        <div><h3>Upload Notes</h3><p>Add a PDF or paste text to generate a quiz</p></div>
+      </div>
+    </div>
+
+    <div class="challenge-banner">
+      <div class="kicker">Challenge Yourself</div>
+      <h2>Test your knowledge.<br><span class="grad">Improve every day.</span></h2>
+      <p>Every quiz you take is a step towards a better you!</p>
+      <div class="challenge-icons">
+        <div class="challenge-icon"><div class="bubble b-learn">&#128218;</div><span class="label">Learn</span></div>
+        <div class="challenge-icon"><div class="bubble b-practice">&#128203;</div><span class="label">Practice</span></div>
+        <div class="challenge-icon"><div class="bubble b-improve">&#127919;</div><span class="label">Improve</span></div>
+        <div class="challenge-icon"><div class="bubble b-achieve">&#127942;</div><span class="label">Achieve</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ ADD NOTES SCREEN ============ -->
+  <div class="screen hidden" id="screen-notes">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="goTo('home')" title="Back to Home">&#8592;</button>
+      <div class="brand"><h1 style="font-size:19px;">Add Notes</h1></div>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="page-pad">
+      <p style="color:var(--text-dim); font-size:13px; margin:6px 0 16px;">Paste any notes, summary, or lecture text — the AI writes questions only from this.</p>
+
+      <input type="file" id="pdf-input" accept="application/pdf" class="hidden" onchange="handlePdfSelect(this.files[0])" />
+
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pdf-input').click()">
+        <div class="up-icon" id="upload-icon">&#128196;</div>
+        <h4 id="upload-title">Upload a PDF</h4>
+        <p id="upload-subtitle">Tap to choose a file, or drag one here</p>
+      </div>
+
+      <div class="file-chip hidden" id="file-chip">
+        <span class="fi">&#128196;</span>
+        <div style="flex:1; overflow:hidden;">
+          <div class="fname" id="file-name">—</div>
+          <div class="fmeta" id="file-meta">—</div>
+        </div>
+        <button class="fremove" onclick="removePdf(event)" title="Remove">&#10005;</button>
+      </div>
+
+      <div class="or-divider">or paste text</div>
+
+      <div class="field">
+        <label for="notes-input">Study notes</label>
+        <textarea id="notes-input" rows="6" placeholder="Paste or type your notes here...">Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to create glucose and oxygen. It occurs mainly in the chloroplasts, using chlorophyll to absorb light energy.</textarea>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label for="num-questions">Number of questions</label>
+          <input type="number" id="num-questions" min="3" max="30" value="5" />
+        </div>
+        <div class="field">
+          <label for="difficulty-select">Difficulty</label>
+          <select id="difficulty-select">
+            <option>Easy</option>
+            <option selected>Medium</option>
+            <option>Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="notes-error" class="error-text hidden"></div>
+
+      <button class="btn" id="generate-btn" onclick="generateQuiz()">&#10024; Generate Quiz</button>
+    </div>
+  </div>
+
+  <!-- ============ QUIZ SCREEN ============ -->
+  <div class="screen hidden" id="screen-quiz">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="goTo('home')" title="Back to Home">&#8592;</button>
+      <div class="brand"><h1 style="font-size:19px;">Quiz</h1></div>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="quiz-top">
+      <span class="tab-pill" id="quiz-difficulty">Medium</span>
+      <span class="timer-pill" id="timer-pill">&#9203; 00:30</span>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-labels"><span id="progress-label">Question 1 of 5</span><span id="progress-pct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="q-card glass-card">
+      <span class="tab-pill">Question</span>
+      <h3 id="q-text" style="margin-top:12px;"></h3>
+      <div id="q-options"></div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn ghost" id="prev-btn" onclick="prevQuestion()">Previous</button>
+      <button class="btn" id="next-btn" onclick="nextQuestion()">Next</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <div class="screen hidden" id="screen-result">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="goTo('home')" title="Back to Home">&#8592;</button>
+      <div class="brand"><h1 style="font-size:19px;">Result</h1></div>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="score-hero">
+      <div class="score-ring" id="score-ring"><span id="score-pct">0%</span></div>
+      <h2 id="perf-msg">Great job!</h2>
+      <p>Here's how you did on this quiz</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="n" id="stat-total">0</div><div class="l">Total</div></div>
+      <div class="stat-box"><div class="n" id="stat-correct" style="color:var(--good)">0</div><div class="l">Correct</div></div>
+      <div class="stat-box"><div class="n" id="stat-wrong" style="color:var(--bad)">0</div><div class="l">Wrong</div></div>
+      <div class="stat-box"><div class="n" id="stat-score">0</div><div class="l">Score</div></div>
+    </div>
+
+    <div class="section-head"><h3>Review Answers</h3></div>
+    <div id="review-list"></div>
+
+    <div class="nav-row" style="margin-bottom:10px;">
+      <button class="btn ghost" onclick="goTo('history')">View History</button>
+      <button class="btn" onclick="goTo('notes')">New Quiz</button>
+    </div>
+  </div>
+
+  <!-- ============ HISTORY SCREEN ============ -->
+  <div class="screen hidden" id="screen-history">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="goTo('home')" title="Back to Home">&#8592;</button>
+      <div class="brand"><h1 style="font-size:19px;">Quiz History</h1></div>
+      <div style="width:42px;"></div>
+    </div>
+    <div class="page-pad">
+      <p style="color:var(--text-dim); font-size:13px; margin:6px 0 4px;">Every quiz you've completed, most recent first.</p>
+    </div>
+    <div id="history-improvement"></div>
+    <div id="history-list" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ============ SETTINGS SCREEN ============ -->
+  <div class="screen hidden" id="screen-settings">
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons"><span>&#128246;</span><span>5G</span><span>&#128267;</span></div>
+    </div>
+    <div class="header">
+      <button class="icon-btn" onclick="goTo('home')" title="Back to Home">&#8592;</button>
+      <div class="brand"><h1 style="font-size:19px;">Settings</h1></div>
+      <div style="width:42px;"></div>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelect(this.files[0])" />
+
+    <div class="profile-card" id="profile-view">
+      <div class="avatar" id="profile-avatar" onclick="triggerPhotoPicker()" title="Change photo">
+        <span id="profile-avatar-initials">S</span>
+        <img id="profile-avatar-img" class="hidden" alt="Profile photo" />
+        <span class="cam-badge">&#128247;</span>
+      </div>
+      <div class="profile-body">
+        <h3 id="profile-name">Student</h3>
+        <p id="profile-email">student@quizforge.ai</p>
+      </div>
+      <button class="profile-edit" onclick="openProfileEdit()" title="Edit profile">&#9998;</button>
+    </div>
+
+    <div class="profile-card hidden" id="profile-edit-form" style="flex-direction:column; align-items:stretch;">
+      <div class="avatar-lg" id="edit-avatar" onclick="triggerPhotoPicker()" title="Change photo">
+        <span id="edit-avatar-initials">S</span>
+        <img id="edit-avatar-img" class="hidden" alt="Profile photo" />
+        <span class="cam-badge">&#128247;</span>
+      </div>
+      <div class="photo-actions">
+        <button type="button" onclick="triggerPhotoPicker()">Change Photo</button>
+        <button type="button" class="remove" id="remove-photo-btn" onclick="removePhoto()">Remove Photo</button>
+      </div>
+
+      <div class="field" style="margin-bottom:12px;">
+        <label for="edit-name-input">Name</label>
+        <input type="text" id="edit-name-input" placeholder="Your name" />
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label for="edit-email-input">Email</label>
+        <input type="email" id="edit-email-input" placeholder="you@example.com" />
+      </div>
+      <div id="edit-profile-error" class="error-text hidden"></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn ghost" style="width:auto; flex:1;" onclick="cancelProfileEdit()">Cancel</button>
+        <button type="button" class="btn" style="width:auto; flex:1;" onclick="saveProfileEdit()">Save</button>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="profile-stat"><div class="n" id="profile-quizzes">0</div><div class="l">Quizzes</div></div>
+      <div class="profile-stat"><div class="n" id="profile-avg">0%</div><div class="l">Avg Score</div></div>
+      <div class="profile-stat"><div class="n" id="profile-best">0%</div><div class="l">Best Score</div></div>
+    </div>
+
+    <div style="height:6px;"></div>
+    <div class="theme-switch">
+      <button type="button" class="theme-opt" id="theme-btn-light" onclick="setTheme('light')">&#9728;&#65039; Light</button>
+      <button type="button" class="theme-opt active" id="theme-btn-dark" onclick="setTheme('dark')">&#127769; Dark</button>
+    </div>
+    <p style="margin:10px 20px 0; font-size:12px; color:var(--text-dim);">Switches the whole app between the Nebula (dark) and Aurora (light) look.</p>
+
+    <!-- Background Music Card -->
+    <div class="volume-card">
+      <div class="volume-head">
+        <div class="left">
+          <div class="vicon" id="music-icon" onclick="toggleMusicEnabled()">&#127925;</div>
+          <h4>Background Music</h4>
+        </div>
+        <button type="button" class="toggle-btn active" id="music-toggle-btn" onclick="toggleMusicEnabled()">ON</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <span style="font-size:12px; color:var(--text-dim);">Music Volume</span>
+        <span class="volume-pct" id="music-volume-pct">30%</span>
+      </div>
+      <input type="range" class="volume-slider" id="music-volume-slider" min="0" max="100" value="30"
+             style="--fill:30%" oninput="onMusicVolumeChange(this.value)" />
+    </div>
+    <p style="margin:6px 20px 0; font-size:12px; color:var(--text-dim);">Plays soothing background music continuously while taking quizzes.</p>
+
+    <!-- Sound Effects Card -->
+    <div class="volume-card" style="margin-top:12px;">
+      <div class="volume-head">
+        <div class="left">
+          <div class="vicon" id="sfx-icon" onclick="toggleSfxEnabled()">&#128266;</div>
+          <h4>Sound Effects</h4>
+        </div>
+        <button type="button" class="toggle-btn active" id="sfx-toggle-btn" onclick="toggleSfxEnabled()">ON</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <span style="font-size:12px; color:var(--text-dim);">Effects Volume</span>
+        <span class="volume-pct" id="sfx-volume-pct">70%</span>
+      </div>
+      <input type="range" class="volume-slider" id="sfx-volume-slider" min="0" max="100" value="70"
+             style="--fill:70%" oninput="onSfxVolumeChange(this.value)" />
+    </div>
+    <p style="margin:6px 20px 0; font-size:12px; color:var(--text-dim);">Controls tap, timer tick, correct, and wrong answer sound effects.</p>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="closeMenu()"></div>
+  <div class="menu-drawer" id="menu-drawer">
+    <div class="menu-head">
+      <div class="avatar" style="width:44px; height:44px;">
+        <span id="menu-avatar-initials">S</span>
+        <img id="menu-avatar-img" class="hidden" alt="Profile photo" />
+      </div>
+      <div>
+        <h4 id="menu-name">Student</h4>
+        <p id="menu-email">student@quizforge.ai</p>
+      </div>
+      <button class="menu-close" onclick="closeMenu()">&#10005;</button>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <div class="menu-list">
+      <button class="menu-item" onclick="menuNavigate('home')"><span class="mi">&#127968;</span>Home</button>
+      <button class="menu-item" onclick="menuNavigate('notes')"><span class="mi">&#128196;</span>Upload Notes</button>
+      <button class="menu-item" onclick="menuNavigate('history')"><span class="mi">&#128200;</span>Quiz History</button>
+      <button class="menu-item" onclick="menuNavigate('settings')"><span class="mi">&#9881;&#65039;</span>Settings</button>
+      <button class="menu-item" onclick="closeMenu(); toast('QuizForge AI — v1.0');"><span class="mi">&#8505;&#65039;</span>About</button>
+    </div>
+
+    <div class="menu-footer">QuizForge AI &middot; v1.0</div>
+  </div>
+
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>Notifications</h4>
+      <button class="notif-mark-read" onclick="markAllNotificationsRead()">Mark all read</button>
+    </div>
+    <div class="notif-list" id="notif-list"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" data-screen="home"><span class="ic">&#127968;</span>Home</button>
+    <button class="nav-item" data-screen="history"><span class="ic">&#128200;</span>History</button>
+    <button class="nav-item" data-screen="notes"><span class="ic">&#10024;</span>Quiz</button>
+    <button class="nav-item" data-screen="settings"><span class="ic">&#9881;&#65039;</span>Settings</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
